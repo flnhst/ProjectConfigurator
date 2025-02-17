@@ -69,13 +69,13 @@ public class AppSettingsJsonConfigurator(
             throw new ConfiguratorException($"Could not parse '{appSettingsJsonFilePath}' at '{appSettingsJsonFilePath}', expected object as root.");
         }
 
-        var rootObject = rootNode as JsonObject;
+        var rootObject = rootNode.AsObject();
 
         var environmentVariables = environmentVariableGenerator.Generate(machineConfiguration, project, projectConfiguration);
 
         foreach (var (key, value) in environmentVariables)
         {
-            rootNode[key] = value;
+            rootObject[key] = value;
         }
 
         logger.LogInformation("Writing '{ProjectConfigurationName}' to '{LaunchSettingsFilePath}'.", projectConfiguration.Name, appSettingsJsonFilePath);
