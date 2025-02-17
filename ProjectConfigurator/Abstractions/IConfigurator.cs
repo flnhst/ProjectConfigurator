@@ -24,7 +24,7 @@ namespace ProjectConfigurator.Abstractions;
 
 public interface IConfigurator
 {
-    Task ConfigureProjectConfigurationAsync(MachineConfiguration machineConfiguration,
+    Task ConfigureProjectConfigurationAsync(MachineConfiguration machineConfiguration, Project project,
         ProjectConfiguration projectConfiguration,
         CancellationToken cancellationToken = default);
 }

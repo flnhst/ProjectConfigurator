@@ -54,7 +54,10 @@ public class MachineConfigurationReader(ILogger<MachineConfigurationReader> logg
         var machineConfiguration =
             await JsonSerializer.DeserializeAsync<MachineConfiguration>(file, cancellationToken: cancellationToken);
 
-        if (machineConfiguration is null) throw new Exception("Could not read machine configuration.");
+        if (machineConfiguration is null)
+        {
+            throw new Exception("Could not read machine configuration.");
+        }
 
         return machineConfiguration;
     }

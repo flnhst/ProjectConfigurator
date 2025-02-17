@@ -28,24 +28,47 @@ namespace ProjectConfigurator.Generators;
 public class ProjectEnvironmentVariableGenerator(ILogger<ProjectEnvironmentVariable> logger)
     : IProjectEnvironmentVariableGenerator
 {
-    public IDictionary<string, string> Generate(MachineConfiguration machineConfiguration,
+    public IDictionary<string, string> Generate(MachineConfiguration machineConfiguration, Project project,
         ProjectConfiguration projectConfiguration)
     {
         if (projectConfiguration.EnvironmentVariables == null)
-            throw new ConfiguratorException("Missing project environment variables.");
+        {
+            throw new ConfiguratorException("Missing project configuration environment variables.");
+        }
 
         if (machineConfiguration.ConfigurationVariables == null)
+        {
             throw new ConfiguratorException("Missing machine configuration variables.");
+        }
 
         var environmentVariables = new Dictionary<string, string>();
 
-        foreach (var (key, value) in projectConfiguration.EnvironmentVariables)
+        if (project.EnvironmentVariables != null)
+        {
+            GenerateEnvironmentVariables(machineConfiguration, projectConfiguration, project.EnvironmentVariables,
+                environmentVariables);
+        }
+
+        GenerateEnvironmentVariables(machineConfiguration, projectConfiguration, projectConfiguration.EnvironmentVariables, environmentVariables);
+
+        return environmentVariables;
+    }
+
+    private void GenerateEnvironmentVariables(MachineConfiguration machineConfiguration, ProjectConfiguration projectConfiguration,
+        IList<ProjectEnvironmentVariable> projectEnvironmentVariables, Dictionary<string, string> environmentVariables)
+    {
+        if (machineConfiguration.ConfigurationVariables == null)
+        {
+            throw new ConfiguratorException("Missing machine configuration variables.");
+        }
+
+        foreach (var (key, value) in projectEnvironmentVariables)
         {
             if (key == null || value == null)
             {
                 logger.LogWarning(
-                    "Project '{ProjectName}' missing environment variable information: '{Key}' - '{Value}",
-                    projectConfiguration.ProjectName, key, value);
+                    "Project configuration '{ProjectConfigurationName}' missing environment variable information: '{Key}' - '{Value}",
+                    projectConfiguration.Name, key, value);
 
                 continue;
             }
@@ -53,11 +76,11 @@ public class ProjectEnvironmentVariableGenerator(ILogger<ProjectEnvironmentVaria
             var calculatedValue = value;
 
             foreach (var (machineKey, machineValue) in machineConfiguration.ConfigurationVariables)
+            {
                 calculatedValue = calculatedValue.Replace($"${machineKey}$", machineValue);
+            }
 
-            environmentVariables.Add(key, calculatedValue);
+            environmentVariables[key] = calculatedValue;
         }
-
-        return environmentVariables;
     }
 }

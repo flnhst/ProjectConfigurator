@@ -24,6 +24,6 @@ namespace ProjectConfigurator.Abstractions;
 
 public interface IProjectEnvironmentVariableGenerator
 {
-    IDictionary<string, string> Generate(MachineConfiguration machineConfiguration,
+    IDictionary<string, string> Generate(MachineConfiguration machineConfiguration, Project project,
         ProjectConfiguration projectConfiguration);
 }

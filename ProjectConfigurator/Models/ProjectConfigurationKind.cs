@@ -18,18 +18,11 @@
 
 #endregion
 
-using System.Text.Json.Serialization;
-
 namespace ProjectConfigurator.Models;
 
-public class ProjectConfiguration
+public enum ProjectConfigurationKind
 {
-    public string? Name { get; set; }
-
-    [JsonConverter(typeof(JsonStringEnumConverter))]
-    public ProjectConfigurationKind? Kind { get; set; }
-
-    public string? Location { get; set; }
-
-    public IList<ProjectEnvironmentVariable>? EnvironmentVariables { get; set; }
+    LaunchSettingsJson,
+    IntelliJIdeaConfiguration,
+    AppSettingsJson,
 }

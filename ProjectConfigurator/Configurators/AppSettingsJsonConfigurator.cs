@@ -1,21 +1,19 @@
 ﻿#region License
-
 // ProjectConfigurator, help configure your projects.
 // Copyright (C)  2025  Florian Hester
-//
+// 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
-//
+// 
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
-//
+// 
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
 #endregion
 
 using System.Text.Json;
@@ -27,7 +25,7 @@ using ProjectConfigurator.Models;
 
 namespace ProjectConfigurator.Configurators;
 
-public class LaunchSettingsJsonConfigurator(
+public class AppSettingsJsonConfigurator(
     ILogger<LaunchSettingsJsonConfigurator> logger,
     IProjectEnvironmentVariableGenerator environmentVariableGenerator) : IConfigurator
 {
@@ -50,59 +48,39 @@ public class LaunchSettingsJsonConfigurator(
             throw new ConfiguratorException("Project configuration name is missing.");
         }
 
-        var launchSettingsFilePath = Path.Combine(projectConfiguration.Location, "Properties", "launchSettings.json");
+        var appSettingsJsonFilePath = Path.Combine(projectConfiguration.Location, projectConfiguration.Name);
 
-        if (!File.Exists(launchSettingsFilePath))
+        if (!File.Exists(appSettingsJsonFilePath))
         {
-            throw new ConfiguratorException($"Could not find launchSettings.json at '{launchSettingsFilePath}'.");
+            throw new ConfiguratorException($"Could not find '{projectConfiguration.Name}' at '{appSettingsJsonFilePath}'.");
         }
 
-        logger.LogInformation($"Reading launchSettings.json from '{launchSettingsFilePath}'.");
+        logger.LogInformation("Reading '{ProjectConfigurationName}' from '{AppSettingsJsonFilePath}'.", projectConfiguration.Name, appSettingsJsonFilePath);
 
-        var rootNode = await ReadJsonAsync(launchSettingsFilePath, cancellationToken);
+        var rootNode = await ReadJsonAsync(appSettingsJsonFilePath, cancellationToken);
 
         if (rootNode == null)
         {
-            throw new ConfiguratorException($"Could not parse launchSettings.json at '{launchSettingsFilePath}'.");
+            throw new ConfiguratorException($"Could not parse '{appSettingsJsonFilePath}' at '{appSettingsJsonFilePath}'.");
         }
 
-        var profilesNode = rootNode["profiles"];
-
-        if (profilesNode == null)
+        if (rootNode.GetValueKind() != JsonValueKind.Object)
         {
-            throw new ConfiguratorException($"Could not find profiles in '{launchSettingsFilePath}'.");
+            throw new ConfiguratorException($"Could not parse '{appSettingsJsonFilePath}' at '{appSettingsJsonFilePath}', expected object as root.");
         }
 
-        var profileNode = profilesNode[projectConfiguration.Name];
-
-        if (profileNode == null)
-        {
-            throw new ConfiguratorException($"Could not find profile '{projectConfiguration.Name}' in '{launchSettingsFilePath}'.");
-        }
-
-        var environmentVariablesNode = profileNode["environmentVariables"];
-
-        if (environmentVariablesNode == null || environmentVariablesNode.GetValueKind() != JsonValueKind.Object)
-        {
-            environmentVariablesNode = new JsonObject();
-
-            profileNode["environmentVariables"] = environmentVariablesNode;
-        }
-
-        var environmentVariablesObject = environmentVariablesNode.AsObject();
-
-        environmentVariablesObject.Clear();
+        var rootObject = rootNode as JsonObject;
 
         var environmentVariables = environmentVariableGenerator.Generate(machineConfiguration, project, projectConfiguration);
 
         foreach (var (key, value) in environmentVariables)
         {
-            environmentVariablesObject.Add(key, value);
+            rootNode[key] = value;
         }
 
-        logger.LogInformation("Writing launchSettings.json to '{LaunchSettingsFilePath}'.", launchSettingsFilePath);
+        logger.LogInformation("Writing '{ProjectConfigurationName}' to '{LaunchSettingsFilePath}'.", projectConfiguration.Name, appSettingsJsonFilePath);
 
-        await WriteJsonAsync(rootNode, launchSettingsFilePath, cancellationToken);
+        await WriteJsonAsync(rootNode, appSettingsJsonFilePath, cancellationToken);
     }
 
     private async Task<JsonNode?> ReadJsonAsync(string filePath, CancellationToken cancellationToken = default)

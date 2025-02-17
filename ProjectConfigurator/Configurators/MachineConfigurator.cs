@@ -32,18 +32,30 @@ public class MachineConfigurator(IServiceProvider serviceProvider, ILogger<Machi
     public async Task ConfigureMachineAsync(MachineConfiguration machineConfiguration,
         CancellationToken cancellationToken = default)
     {
-        if (machineConfiguration.ProjectConfigurations == null)
+        if (machineConfiguration.Projects == null)
+        {
             throw new ConfiguratorException("Could not find any projects to configure.");
+        }
 
-        foreach (var projectConfiguration in machineConfiguration.ProjectConfigurations)
-            await ConfigureProjectAsync(machineConfiguration, projectConfiguration, cancellationToken);
+        foreach (var project in machineConfiguration.Projects)
+        {
+            if (project.Configurations != null)
+            {
+                foreach (var projectConfiguration in project.Configurations)
+                {
+                    await ConfigureProjectAsync(machineConfiguration, project, projectConfiguration, cancellationToken);
+                }
+            }
+        }
     }
 
-    private async Task ConfigureProjectAsync(MachineConfiguration machineConfiguration,
+    private async Task ConfigureProjectAsync(MachineConfiguration machineConfiguration, Project project,
         ProjectConfiguration projectConfiguration, CancellationToken cancellationToken = default)
     {
         if (projectConfiguration.Kind == null)
+        {
             throw new ConfiguratorException("Missing data for project configuration.");
+        }
 
         await using var scope = serviceProvider.CreateAsyncScope();
 
@@ -51,13 +63,13 @@ public class MachineConfigurator(IServiceProvider serviceProvider, ILogger<Machi
 
         try
         {
-            await configurator.ConfigureProjectConfigurationAsync(machineConfiguration, projectConfiguration,
+            await configurator.ConfigureProjectConfigurationAsync(machineConfiguration, project, projectConfiguration,
                 cancellationToken);
         }
         catch (ConfiguratorException e)
         {
             logger.LogWarning(e, "Failed to configure project configuration '{ProjectConfigurationName}'.",
-                projectConfiguration.ConfigurationName);
+                projectConfiguration.Name);
         }
         finally
         {
@@ -75,15 +87,15 @@ public class MachineConfigurator(IServiceProvider serviceProvider, ILogger<Machi
         }
     }
 
-    private IConfigurator InstantiateConfigurator(ProjectConfigurationKind projectConfigurationKind)
-    {
-        return projectConfigurationKind switch
+    private IConfigurator InstantiateConfigurator(ProjectConfigurationKind projectConfigurationKind) =>
+        projectConfigurationKind switch
         {
             ProjectConfigurationKind.LaunchSettingsJson => ActivatorUtilities
                 .CreateInstance<LaunchSettingsJsonConfigurator>(serviceProvider),
             ProjectConfigurationKind.IntelliJIdeaConfiguration => ActivatorUtilities
                 .CreateInstance<IntelliJIdeaConfigurator>(serviceProvider),
+            ProjectConfigurationKind.AppSettingsJson => ActivatorUtilities
+                .CreateInstance<AppSettingsJsonConfigurator>(serviceProvider),
             _ => throw new ArgumentOutOfRangeException(nameof(projectConfigurationKind), projectConfigurationKind, null)
         };
-    }
 }

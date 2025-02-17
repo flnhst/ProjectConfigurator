@@ -24,5 +24,5 @@ public class MachineConfiguration
 {
     public IList<ConfigurationVariable>? ConfigurationVariables { get; set; }
 
-    public IList<ProjectConfiguration>? ProjectConfigurations { get; set; }
+    public IList<Project>? Projects { get; set; }
 }

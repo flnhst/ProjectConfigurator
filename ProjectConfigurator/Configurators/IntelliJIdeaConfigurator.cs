@@ -30,22 +30,29 @@ public class IntelliJIdeaConfigurator(
     ILogger<IntelliJIdeaConfigurator> logger,
     IProjectEnvironmentVariableGenerator environmentVariableGenerator) : IConfigurator
 {
-    public Task ConfigureProjectConfigurationAsync(MachineConfiguration machineConfiguration,
+    public Task ConfigureProjectConfigurationAsync(MachineConfiguration machineConfiguration, Project project,
         ProjectConfiguration projectConfiguration,
         CancellationToken cancellationToken = default)
     {
-        if (projectConfiguration.ProjectName == null ||
-            projectConfiguration.ConfigurationName == null ||
-            projectConfiguration.Location == null)
-            throw new ConfiguratorException("ProjectConfiguration is missing data.");
+        if (projectConfiguration.Location == null)
+        {
+            throw new ConfiguratorException("Project configuration location is missing.");
+        }
+
+        if (projectConfiguration.Name == null)
+        {
+            throw new ConfiguratorException("Project configuration name is missing.");
+        }
 
         var workspaceXmlFilePath = Path.Combine(projectConfiguration.Location, ".idea",
-            $".idea.{projectConfiguration.ProjectName}", ".idea", "workspace.xml");
+            $".idea.{project.Name}", ".idea", "workspace.xml");
 
         if (!File.Exists(workspaceXmlFilePath))
+        {
             throw new ConfiguratorException($"Could not find workspace.xml file at '{workspaceXmlFilePath}'.");
+        }
 
-        logger.LogInformation($"Reading workspace.xml from '{workspaceXmlFilePath}'.");
+        logger.LogInformation("Reading workspace.xml from '{WorkspaceXmlFilePath}'.", workspaceXmlFilePath);
 
         var doc = new XmlDocument();
 
@@ -53,11 +60,13 @@ public class IntelliJIdeaConfigurator(
 
         var configurationNode =
             doc.SelectSingleNode(
-                $"/project/component[@name='RunManager']/configuration[@name='{projectConfiguration.ConfigurationName}']");
+                $"/project/component[@name='RunManager']/configuration[@name='{projectConfiguration.Name}']");
 
         if (configurationNode == null)
+        {
             throw new ConfiguratorException(
-                $"Could not find configuration '{projectConfiguration.ConfigurationName}' for project '{projectConfiguration.ProjectName}'.");
+                $"Could not find configuration '{projectConfiguration.Name}' for project '{project.Name}'.");
+        }
 
         var envsNode = configurationNode.SelectSingleNode("envs");
 
@@ -70,7 +79,7 @@ public class IntelliJIdeaConfigurator(
 
         envsNode.RemoveAll();
 
-        var environmentVariables = environmentVariableGenerator.Generate(machineConfiguration, projectConfiguration);
+        var environmentVariables = environmentVariableGenerator.Generate(machineConfiguration, project, projectConfiguration);
 
         foreach (var (key, value) in environmentVariables)
         {
@@ -84,7 +93,7 @@ public class IntelliJIdeaConfigurator(
 
         doc.Save(workspaceXmlFilePath);
 
-        logger.LogInformation($"Writing workspace.xml to '{workspaceXmlFilePath}'.");
+        logger.LogInformation("Writing workspace.xml to '{WorkspaceXmlFilePath}'.", workspaceXmlFilePath);
 
         return Task.CompletedTask;
     }
