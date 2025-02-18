@@ -31,5 +31,5 @@ public class ProjectConfiguration
 
     public string? Location { get; set; }
 
-    public IList<ProjectEnvironmentVariable>? EnvironmentVariables { get; set; }
+    public IDictionary<string, string?>? EnvironmentVariables { get; set; }
 }

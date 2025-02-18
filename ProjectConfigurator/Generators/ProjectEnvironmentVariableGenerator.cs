@@ -55,7 +55,7 @@ public class ProjectEnvironmentVariableGenerator(ILogger<ProjectEnvironmentVaria
     }
 
     private void GenerateEnvironmentVariables(MachineConfiguration machineConfiguration, ProjectConfiguration projectConfiguration,
-        IList<ProjectEnvironmentVariable> projectEnvironmentVariables, Dictionary<string, string> environmentVariables)
+        IDictionary<string, string?> projectEnvironmentVariables, Dictionary<string, string> environmentVariables)
     {
         if (machineConfiguration.ConfigurationVariables == null)
         {
@@ -64,10 +64,10 @@ public class ProjectEnvironmentVariableGenerator(ILogger<ProjectEnvironmentVaria
 
         foreach (var (key, value) in projectEnvironmentVariables)
         {
-            if (key == null || value == null)
+            if (value == null)
             {
                 logger.LogWarning(
-                    "Project configuration '{ProjectConfigurationName}' missing environment variable information: '{Key}' - '{Value}",
+                    "Project configuration '{ProjectConfigurationName}' missing environment variable information: '{Key}' - '{Value}'",
                     projectConfiguration.Name, key, value);
 
                 continue;

@@ -24,5 +24,5 @@ public class Project
 
     public IList<ProjectConfiguration>? Configurations { get; set; }
 
-    public IList<ProjectEnvironmentVariable>? EnvironmentVariables { get; set; }
+    public IDictionary<string, string?>? EnvironmentVariables { get; set; }
 }
